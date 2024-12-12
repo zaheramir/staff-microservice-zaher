@@ -1,6 +1,3 @@
-
-
-
 syntax = "proto3";
 
 option go_package = "github.com/BetterGR/staff-microservice/staff_protobuf";
@@ -70,25 +67,24 @@ message UpdateStaffMemberResponse{
 message DeleteStaffMemberRequest{
   string token = 1;
   StaffMember staffMember = 2;
-
 }
 
 // Response message for deleting a staff member - no data returned.
 message DeleteStaffMemberResponse {}
 
-
 // StaffMember message includes:
 message StaffMember{
   string id = 1;
-  string name = 2;
-  string email = 3;
-  string title = 4;
-  string office = 5;
+  string firstName = 2;
+  string secondName = 3;
+  string email = 4;
+  string title = 5;
+  string office = 6;
 }
 
 // Course message includes:
 message Course{
   string id = 1;
-  string name = 2;
+  string courseName = 2;
   string semester = 3;
 }
