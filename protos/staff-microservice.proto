@@ -1,0 +1,90 @@
+syntax = "proto3";
+
+option go_package = "github.com/BetterGR/staff-microservice/staff_protobuf";
+
+package staff;
+
+service StaffService {
+  // Get a staff member
+  rpc GetStaffMember(GetStaffMemberRequest) returns (GetStaffMemberResponse);
+  // Get all courses assigned to a staff member
+  rpc GetCoursesList(GetCoursesListRequest) returns (GetCoursesListResponse);
+  // Create a new staff member
+  rpc CreateStaffMember(CreateStaffMemberRequest) returns (CreateStaffMemberResponse);
+  // Update a staff member
+  rpc UpdateStaffMember(UpdateStaffMemberRequest) returns (UpdateStaffMemberResponse);
+  // Delete a staff member
+  rpc DeleteStaffMember(DeleteStaffMemberRequest) returns (DeleteStaffMemberResponse);
+}
+
+
+// Request message for getting a staff member.
+message GetStaffMemberRequest{
+  string token = 1;
+  string id = 2;
+}
+
+// Response message contains the staff member.
+message GetStaffMemberResponse{
+  StaffMember staffMember = 1;
+}
+
+// Request message for fetching the courses' list for courses a staff member is assigned to.
+message GetCoursesListRequest{
+  // do we need token here? do we want to allow guests (not students or staff members)
+  // to access the courses list fo a specific staff member?
+  StaffMember staffMember = 1;
+  string semester = 2;
+}
+
+// Response message with a courses' list for courses a staff member is assigned to.
+message GetCoursesListResponse{
+  repeated Course courses = 1;
+}
+
+// Request message for creating a new staff member.
+message CreateStaffMemberRequest{
+  StaffMember staffMember = 1;
+}
+
+// Response message contains the new staff member details.
+message CreateStaffMemberResponse{
+  StaffMember staffMember = 1;
+}
+
+// Request message for updating a staff member.
+message UpdateStaffMemberRequest{
+  string token = 1;
+  StaffMember staffMember = 2;
+}
+
+// Request message with the updated staff member details.
+message UpdateStaffMemberResponse{
+  StaffMember staffMember = 1;
+}
+
+// Request message for deleting a staff member.
+message DeleteStaffMemberRequest{
+  string token = 1;
+  StaffMember staffMember = 2;
+}
+
+// Response message for deleting a staff member - no data returned.
+message DeleteStaffMemberResponse {}
+
+// StaffMember message includes:
+message StaffMember{
+  string id = 1;
+  string firstName = 2;
+  string secondName = 3;
+  string email = 4;
+  string title = 5;
+  string office = 6;
+}
+
+// Course message includes:
+message Course{
+  string id = 1;
+  string courseName = 2;
+  string semester = 3;
+}
