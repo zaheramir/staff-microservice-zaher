@@ -104,11 +104,16 @@ endif
 # Run the server
 run: proto fmt vet lint
 	@echo [RUN] Starting server...
-	@go run ./server/server.go $(ARGS)
+ifeq ($(OS),Windows_NT)
+	@setlocal enabledelayedexpansion && ( \
+		for /F "tokens=1,2 delims==" %%i in (.env) do set %%i=%%j) && go run ./server/server.go $(ARGS)
+else
+	@env $$(cat .env | xargs) go run ./server/server.go $(ARGS)
+endif
 
 # Build Docker image
 docker-build: proto fmt vet lint build
-	@echo [DOCKER] Building Docker image $(DOCKER_IMAGE_NAME):$(DOCKER_TAG)...
+	@echo [DOCKER] Building Docker image $(DOCKER_IMAGE_NAME):$(DOCKER_TAG)... 
 	@docker build -t $(DOCKER_IMAGE_NAME):$(DOCKER_TAG) -f $(DOCKERFILE) .
 	@echo [DOCKER] Docker image $(DOCKER_IMAGE_NAME):$(DOCKER_TAG) built successfully.
 
