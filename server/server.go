@@ -7,8 +7,9 @@ import (
 	"net"
 	"os"
 
-	staffProtos "github.com/BetterGR/staff-microservice/protos"
+	spb "github.com/BetterGR/staff-microservice/protos"
 	ms "github.com/TekClinic/MicroService-Lib"
+	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -17,13 +18,14 @@ import (
 
 const (
 	connectionProtocol = "tcp"
-	traceVerbosity     = 5
+	traceVerbosity     = 0
 )
 
-// server is used to implement staffProtos.StaffServiceServer.
+// staffServer implements staffProtos.StaffServiceServer.
 type staffServer struct {
 	ms.BaseServiceServer
-	staffProtos.UnimplementedStaffServiceServer
+	spb.UnimplementedStaffServiceServer
+	db *Database
 }
 
 // createStaffMicroserviceServer initiates the mslib for staff microservice.
@@ -33,89 +35,125 @@ func createStaffMicroserviceServer() (*staffServer, error) {
 		return nil, fmt.Errorf("failed to create base service: %w", err)
 	}
 
+	database, err := InitializeDatabase()
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize database: %w", err)
+	}
+
 	return &staffServer{
 		BaseServiceServer:               base,
-		UnimplementedStaffServiceServer: staffProtos.UnimplementedStaffServiceServer{},
+		UnimplementedStaffServiceServer: spb.UnimplementedStaffServiceServer{},
+		db:                              database,
 	}, nil
 }
 
 // GetStaffMember retrieves a specific staff member.
-func (s *staffServer) GetStaffMember(ctx context.Context, req *staffProtos.GetStaffMemberRequest) (
-	*staffProtos.GetStaffMemberResponse, error,
+func (s *staffServer) GetStaffMember(ctx context.Context, req *spb.GetStaffMemberRequest) (
+	*spb.GetStaffMemberResponse, error,
 ) {
-	_, err := s.VerifyToken(ctx, req.GetToken())
-	if err != nil {
+	if _, err := s.VerifyToken(ctx, req.GetToken()); err != nil {
 		return nil, fmt.Errorf("authentication failed: %w",
 			status.Error(codes.Unauthenticated, err.Error()))
 	}
 
 	logger := klog.FromContext(ctx)
-	staffMemberID := req.GetId()
-	logger.V(traceVerbosity).Info("Received GetStaffMember request", "staffMemberID", staffMemberID)
-	// TODO: implement the method
-	// for the sake of mslib integration, we throw an error as a temporary return, because method is not implemented yet
-	return nil, status.Errorf(codes.Unimplemented, "method GetStaffMember not implemented")
+	logger.V(traceVerbosity).Info("Received GetStaffMember request", "staffMemberID", req.GetId())
+
+	staffMember, err := s.db.GetStaff(ctx, req.GetId())
+	if err != nil {
+		return nil, status.Errorf(codes.NotFound, "staff member not found: %v", err)
+	}
+
+	return &spb.GetStaffMemberResponse{StaffMember: staffMember}, nil
 }
 
 // GetCoursesList retrieves all courses assigned to a staff member.
-func (s *staffServer) GetCoursesList(ctx context.Context, req *staffProtos.GetCoursesListRequest) (
-	*staffProtos.GetCoursesListResponse, error,
+func (s *staffServer) GetCourses(ctx context.Context, req *spb.GetCoursesRequest) (
+	*spb.GetCoursesResponse, error,
 ) {
+	if _, err := s.VerifyToken(ctx, req.GetToken()); err != nil {
+		return nil, fmt.Errorf("authentication failed: %w",
+			status.Error(codes.Unauthenticated, err.Error()))
+	}
+
 	logger := klog.FromContext(ctx)
-	firstName := req.GetStaffMember().GetFirstName()
-	secondName := req.GetStaffMember().GetSecondName()
-	semester := req.GetSemester()
-	logger.V(traceVerbosity).Info("Received GetCoursesList request",
-		"firstName", firstName, "secondName", secondName, "semester", semester)
-	// TODO: implement the method
-	// for the sake of mslib integration, we throw an error as a temporary return, because method is not implemented yet
-	return nil, status.Errorf(codes.Unimplemented, "method GetCoursesList not implemented")
+	id := req.GetId()
+	logger.V(traceVerbosity).Info("Received GetCoursesList request", "staffMemberID", id)
+
+	courses, err := s.db.GetStaffCourses(ctx, id)
+	if err != nil {
+		return nil, status.Errorf(codes.NotFound, "courses not found: %v", err)
+	}
+
+	return &spb.GetCoursesResponse{Courses: courses}, nil
 }
 
 // CreateStaffMember creates a new staff member.
-func (s *staffServer) CreateStaffMember(ctx context.Context, req *staffProtos.CreateStaffMemberRequest) (
-	*staffProtos.CreateStaffMemberResponse, error,
+func (s *staffServer) CreateStaffMember(ctx context.Context, req *spb.CreateStaffMemberRequest) (
+	*spb.CreateStaffMemberResponse, error,
 ) {
+	if _, err := s.VerifyToken(ctx, req.GetToken()); err != nil {
+		return nil, fmt.Errorf("authentication failed: %w",
+			status.Error(codes.Unauthenticated, err.Error()))
+	}
+
 	logger := klog.FromContext(ctx)
-	firstName := req.GetStaffMember().GetFirstName()
-	secondName := req.GetStaffMember().GetSecondName()
-	logger.V(traceVerbosity).Info("Received CreateStaffMember request",
-		"firstName", firstName, "secondName", secondName)
-	// TODO: implement the method
-	// for the sake of mslib integration, we throw an error as a temporary return, because method is not implemented yet
-	return nil, status.Errorf(codes.Unimplemented, "method CreateStaffMember not implemented")
+	logger.V(traceVerbosity).Info("Received CreateStaffMember request", "firstName", req.GetStaffMember().GetFirstName())
+
+	if err := s.db.AddStaff(ctx, req.GetStaffMember()); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to create staff member: %v", err)
+	}
+
+	return &spb.CreateStaffMemberResponse{StaffMember: req.GetStaffMember()}, nil
 }
 
 // UpdateStaffMember updates details of an existing staff member.
-func (s *staffServer) UpdateStaffMember(ctx context.Context, req *staffProtos.UpdateStaffMemberRequest) (
-	*staffProtos.UpdateStaffMemberResponse, error,
+func (s *staffServer) UpdateStaffMember(ctx context.Context, req *spb.UpdateStaffMemberRequest) (
+	*spb.UpdateStaffMemberResponse, error,
 ) {
-	logger := klog.FromContext(ctx)
-	firstName := req.GetStaffMember().GetFirstName()
-	secondName := req.GetStaffMember().GetSecondName()
-	logger.V(traceVerbosity).Info("Received UpdateStaffMember request",
-		"firstName", firstName, "secondName", secondName)
+	if _, err := s.VerifyToken(ctx, req.GetToken()); err != nil {
+		return nil, fmt.Errorf("authentication failed: %w",
+			status.Error(codes.Unauthenticated, err.Error()))
+	}
 
-	// TODO: implement the method
-	// for the sake of mslib integration, we throw an error as a temporary return, because method is not implemented yet
-	return nil, status.Errorf(codes.Unimplemented, "method UpdateStaffMember not implemented")
+	logger := klog.FromContext(ctx)
+	logger.V(traceVerbosity).Info("Received UpdateStaffMember request", "staffMemberID", req.GetStaffMember().GetId())
+
+	if err := s.db.UpdateStaff(ctx, req.GetStaffMember()); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to update staff member: %v", err)
+	}
+
+	return &spb.UpdateStaffMemberResponse{StaffMember: req.GetStaffMember()}, nil
 }
 
 // DeleteStaffMember deletes a specific staff member.
-func (s *staffServer) DeleteStaffMember(ctx context.Context, req *staffProtos.DeleteStaffMemberRequest) (
-	*staffProtos.DeleteStaffMemberResponse, error,
+func (s *staffServer) DeleteStaffMember(ctx context.Context, req *spb.DeleteStaffMemberRequest) (
+	*spb.DeleteStaffMemberResponse, error,
 ) {
+	if _, err := s.VerifyToken(ctx, req.GetToken()); err != nil {
+		return nil, fmt.Errorf("authentication failed: %w",
+			status.Error(codes.Unauthenticated, err.Error()))
+	}
+
 	logger := klog.FromContext(ctx)
-	staffMemberID := req.GetStaffMember().GetId()
-	logger.V(traceVerbosity).Info("Received DeleteStaffMember request", "staffMemberID", staffMemberID)
-	// TODO: implement the method
-	// for the sake of mslib integration, we throw an error as a temporary return, because method is not implemented yet
-	return nil, status.Errorf(codes.Unimplemented, "method DeleteStaffMember not implemented")
+	id := req.GetId()
+	logger.V(traceVerbosity).Info("Received DeleteStaffMember request", "staffMemberID", id)
+
+	if err := s.db.DeleteStaff(ctx, id); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to delete staff member: %v", err)
+	}
+
+	return &spb.DeleteStaffMemberResponse{}, nil
 }
 
 func main() {
 	klog.InitFlags(nil)
 	flag.Parse()
+
+	err := godotenv.Load()
+	if err != nil {
+		klog.Fatalf("Error loading .env file")
+	}
 
 	// init the StaffServer
 	server, err := createStaffMicroserviceServer()
@@ -124,14 +162,17 @@ func main() {
 	}
 
 	// create a listener on the port specified in file .env
-	listener, err := net.Listen(connectionProtocol, "localhost:"+os.Getenv("STAFF_PORT"))
+	address := os.Getenv("GRPC_PORT")
+
+	listener, err := net.Listen(connectionProtocol, address)
 	if err != nil {
 		klog.Error("Failed to listen:", err)
 	}
 
+	klog.Info("Starting StudentsServer on port: ", address)
 	// create a grpc StaffServer
 	grpcServer := grpc.NewServer()
-	staffProtos.RegisterStaffServiceServer(grpcServer, server)
+	spb.RegisterStaffServiceServer(grpcServer, server)
 
 	if err := grpcServer.Serve(listener); err != nil {
 		klog.Error("Failed to serve:", err)
