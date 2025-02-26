@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"time"
 
 	spb "github.com/BetterGR/staff-microservice/protos"
 	"github.com/uptrace/bun"
@@ -101,28 +102,27 @@ func (d *Database) createSchemaIfNotExists(ctx context.Context) error {
 
 // Staff represents the staff table.
 type Staff struct {
-	UniqueID    string   `bun:",pk,default:gen_random_uuid()"`
-	ID          string   `bun:"id,unique,notnull"`
-	FirstName   string   `bun:"first_name,notnull"`
-	LastName    string   `bun:"last_name,notnull"`
-	Email       string   `bun:"email,unique,notnull"`
-	PhoneNumber string   `bun:"phone_number,unique,notnull"`
-	Title       string   `bun:"title,notnull"`
-	Office      string   `bun:"office,notnull"`
-	Courses     []string `bun:",array,notnull"`
+	StaffID     string    `bun:"staff_id,unique,notnull"`
+	FirstName   string    `bun:"first_name,notnull"`
+	LastName    string    `bun:"last_name,notnull"`
+	Email       string    `bun:"email,unique,notnull"`
+	PhoneNumber string    `bun:"phone_number,unique,notnull"`
+	Title       string    `bun:"title,notnull"`
+	Office      string    `bun:"office,notnull"`
+	CreatedAt   time.Time `bun:"created_at,default:current_timestamp"`
+	UpdatedAt   time.Time `bun:"updated_at,default:current_timestamp"`
 }
 
 // AddStaff adds a new staff member.
 func (d *Database) AddStaff(ctx context.Context, staff *spb.StaffMember) error {
 	_, err := d.db.NewInsert().Model(&Staff{
-		ID:          staff.GetId(),
+		StaffID:     staff.GetStaffID(),
 		FirstName:   staff.GetFirstName(),
 		LastName:    staff.GetSecondName(),
 		Email:       staff.GetEmail(),
 		PhoneNumber: staff.GetPhoneNumber(),
 		Title:       staff.GetTitle(),
 		Office:      staff.GetOffice(),
-		Courses:     staff.GetCourses(),
 	}).Exec(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to add staff: %w", err)
@@ -134,34 +134,32 @@ func (d *Database) AddStaff(ctx context.Context, staff *spb.StaffMember) error {
 // GetStaff retrieves a staff member by ID.
 func (d *Database) GetStaff(ctx context.Context, id string) (*spb.StaffMember, error) {
 	staffMember := new(Staff)
-	if err := d.db.NewSelect().Model(staffMember).Where("id = ?", id).Scan(ctx); err != nil {
+	if err := d.db.NewSelect().Model(staffMember).Where("staff_id = ?", id).Scan(ctx); err != nil {
 		return nil, fmt.Errorf("failed to get staff: %w", err)
 	}
 
 	return &spb.StaffMember{
-		Id:          staffMember.ID,
+		StaffID:     staffMember.StaffID,
 		FirstName:   staffMember.FirstName,
 		SecondName:  staffMember.LastName,
 		Email:       staffMember.Email,
 		PhoneNumber: staffMember.PhoneNumber,
 		Title:       staffMember.Title,
 		Office:      staffMember.Office,
-		Courses:     staffMember.Courses,
 	}, nil
 }
 
 // UpdateStaff updates an existing staff member.
 func (d *Database) UpdateStaff(ctx context.Context, staff *spb.StaffMember) error {
 	_, err := d.db.NewUpdate().Model(&Staff{
-		ID:          staff.GetId(),
+		StaffID:     staff.GetStaffID(),
 		FirstName:   staff.GetFirstName(),
 		LastName:    staff.GetSecondName(),
 		Email:       staff.GetEmail(),
 		PhoneNumber: staff.GetPhoneNumber(),
 		Title:       staff.GetTitle(),
 		Office:      staff.GetOffice(),
-		Courses:     staff.GetCourses(),
-	}).Where("id = ?", staff.GetId()).Exec(ctx)
+	}).Where("staff_id = ?", staff.GetStaffID()).Exec(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to update staff: %w", err)
 	}
@@ -171,20 +169,10 @@ func (d *Database) UpdateStaff(ctx context.Context, staff *spb.StaffMember) erro
 
 // DeleteStaff deletes a staff member by ID.
 func (d *Database) DeleteStaff(ctx context.Context, id string) error {
-	_, err := d.db.NewDelete().Model((*Staff)(nil)).Where("id = ?", id).Exec(ctx)
+	_, err := d.db.NewDelete().Model((*Staff)(nil)).Where("staff_id = ?", id).Exec(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to delete staff: %w", err)
 	}
 
 	return nil
-}
-
-// GetStaffCourses returns the courses for a staff member.
-func (d *Database) GetStaffCourses(ctx context.Context, id string) ([]string, error) {
-	s := new(Staff)
-	if err := d.db.NewSelect().Model(s).Where("id = ?", id).Scan(ctx); err != nil {
-		return nil, fmt.Errorf("failed to get staff courses: %w", err)
-	}
-
-	return s.Courses, nil
 }

@@ -7,8 +7,6 @@ package staff;
 service StaffService {
   	// Get a staff member
   	rpc GetStaffMember(GetStaffMemberRequest) returns (GetStaffMemberResponse);
-  	// Get all courses assigned to a staff member
-  	rpc GetCourses(GetCoursesRequest) returns (GetCoursesResponse);
   	// Create a new staff member
   	rpc CreateStaffMember(CreateStaffMemberRequest) returns (CreateStaffMemberResponse);
   	// Update a staff member
@@ -18,67 +16,55 @@ service StaffService {
 }
 
 // Request message for getting a staff member.
-message GetStaffMemberRequest{
+message GetStaffMemberRequest {
 	string token = 1;
-	string id = 2;
+	string staffID = 2;
 }
 
 // Response message contains the staff member.
-message GetStaffMemberResponse{
+message GetStaffMemberResponse {
 	StaffMember staffMember = 1;
 }
 
-// Request message for fetching the courses'  for courses a staff member is assigned to.
-message GetCoursesRequest{
-	string token = 1;
-	string id = 2;
-	string semester = 3;
-}
-
-// Response message with a courses for courses a staff member is assigned to.
-message GetCoursesResponse{
-	repeated string courses = 1;
-}
-
 // Request message for creating a new staff member.
-message CreateStaffMemberRequest{
+message CreateStaffMemberRequest {
 	string token = 1;
 	StaffMember staffMember = 2;
 }
 
 // Response message contains the new staff member details.
-message CreateStaffMemberResponse{
+message CreateStaffMemberResponse {
 	StaffMember staffMember = 1;
 }
 
 // Request message for updating a staff member.
-message UpdateStaffMemberRequest{
+message UpdateStaffMemberRequest {
 	string token = 1;
 	StaffMember staffMember = 2;
 }
 
 // Request message with the updated staff member details.
-message UpdateStaffMemberResponse{
+message UpdateStaffMemberResponse {
 	StaffMember staffMember = 1;
 }
 
 // Request message for deleting a staff member.
-message DeleteStaffMemberRequest{
+message DeleteStaffMemberRequest {
 	string token = 1;
-	string id = 2;
+	string staffID = 2;
 }
 
 // Response message for deleting a staff member - no data returned.
 message DeleteStaffMemberResponse {}
 
 // StaffMember message includes:
-message StaffMember{
-  	string id = 1;
-  	string firstName = 2;
-  	string secondName = 3;
-  	string email = 4;
-  	string phoneNumber = 5;
-  	string title = 6;
-  	string office = 7;
-  	repeated string courses = 8;
+message StaffMember {
+	string staffID = 1;
+	string firstName = 2;
+	string secondName = 3;
+	string email = 4;
+	string phoneNumber = 5;
+	string title = 6;
+	string office = 7;
+	repeated string courses = 8;
 }

@@ -20,7 +20,6 @@ const _ = grpc.SupportPackageIsVersion9
 
 const (
 	StaffService_GetStaffMember_FullMethodName    = "/staff.StaffService/GetStaffMember"
-	StaffService_GetCourses_FullMethodName        = "/staff.StaffService/GetCourses"
 	StaffService_CreateStaffMember_FullMethodName = "/staff.StaffService/CreateStaffMember"
 	StaffService_UpdateStaffMember_FullMethodName = "/staff.StaffService/UpdateStaffMember"
 	StaffService_DeleteStaffMember_FullMethodName = "/staff.StaffService/DeleteStaffMember"
@@ -32,8 +31,6 @@ const (
 type StaffServiceClient interface {
 	// Get a staff member
 	GetStaffMember(ctx context.Context, in *GetStaffMemberRequest, opts ...grpc.CallOption) (*GetStaffMemberResponse, error)
-	// Get all courses assigned to a staff member
-	GetCourses(ctx context.Context, in *GetCoursesRequest, opts ...grpc.CallOption) (*GetCoursesResponse, error)
 	// Create a new staff member
 	CreateStaffMember(ctx context.Context, in *CreateStaffMemberRequest, opts ...grpc.CallOption) (*CreateStaffMemberResponse, error)
 	// Update a staff member
@@ -54,16 +51,6 @@ func (c *staffServiceClient) GetStaffMember(ctx context.Context, in *GetStaffMem
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetStaffMemberResponse)
 	err := c.cc.Invoke(ctx, StaffService_GetStaffMember_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *staffServiceClient) GetCourses(ctx context.Context, in *GetCoursesRequest, opts ...grpc.CallOption) (*GetCoursesResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GetCoursesResponse)
-	err := c.cc.Invoke(ctx, StaffService_GetCourses_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -106,8 +93,6 @@ func (c *staffServiceClient) DeleteStaffMember(ctx context.Context, in *DeleteSt
 type StaffServiceServer interface {
 	// Get a staff member
 	GetStaffMember(context.Context, *GetStaffMemberRequest) (*GetStaffMemberResponse, error)
-	// Get all courses assigned to a staff member
-	GetCourses(context.Context, *GetCoursesRequest) (*GetCoursesResponse, error)
 	// Create a new staff member
 	CreateStaffMember(context.Context, *CreateStaffMemberRequest) (*CreateStaffMemberResponse, error)
 	// Update a staff member
@@ -126,9 +111,6 @@ type UnimplementedStaffServiceServer struct{}
 
 func (UnimplementedStaffServiceServer) GetStaffMember(context.Context, *GetStaffMemberRequest) (*GetStaffMemberResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetStaffMember not implemented")
-}
-func (UnimplementedStaffServiceServer) GetCourses(context.Context, *GetCoursesRequest) (*GetCoursesResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetCourses not implemented")
 }
 func (UnimplementedStaffServiceServer) CreateStaffMember(context.Context, *CreateStaffMemberRequest) (*CreateStaffMemberResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateStaffMember not implemented")
@@ -174,24 +156,6 @@ func _StaffService_GetStaffMember_Handler(srv interface{}, ctx context.Context, 
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(StaffServiceServer).GetStaffMember(ctx, req.(*GetStaffMemberRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _StaffService_GetCourses_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetCoursesRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(StaffServiceServer).GetCourses(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: StaffService_GetCourses_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(StaffServiceServer).GetCourses(ctx, req.(*GetCoursesRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -260,10 +224,6 @@ var StaffService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetStaffMember",
 			Handler:    _StaffService_GetStaffMember_Handler,
-		},
-		{
-			MethodName: "GetCourses",
-			Handler:    _StaffService_GetCourses_Handler,
 		},
 		{
 			MethodName: "CreateStaffMember",

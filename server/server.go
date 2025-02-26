@@ -57,35 +57,14 @@ func (s *staffServer) GetStaffMember(ctx context.Context, req *spb.GetStaffMembe
 	}
 
 	logger := klog.FromContext(ctx)
-	logger.V(traceVerbosity).Info("Received GetStaffMember request", "staffMemberID", req.GetId())
+	logger.V(traceVerbosity).Info("Received GetStaffMember request", "staffMemberID", req.GetStaffID())
 
-	staffMember, err := s.db.GetStaff(ctx, req.GetId())
+	staffMember, err := s.db.GetStaff(ctx, req.GetStaffID())
 	if err != nil {
 		return nil, status.Errorf(codes.NotFound, "staff member not found: %v", err)
 	}
 
 	return &spb.GetStaffMemberResponse{StaffMember: staffMember}, nil
-}
-
-// GetCoursesList retrieves all courses assigned to a staff member.
-func (s *staffServer) GetCourses(ctx context.Context, req *spb.GetCoursesRequest) (
-	*spb.GetCoursesResponse, error,
-) {
-	if _, err := s.VerifyToken(ctx, req.GetToken()); err != nil {
-		return nil, fmt.Errorf("authentication failed: %w",
-			status.Error(codes.Unauthenticated, err.Error()))
-	}
-
-	logger := klog.FromContext(ctx)
-	id := req.GetId()
-	logger.V(traceVerbosity).Info("Received GetCoursesList request", "staffMemberID", id)
-
-	courses, err := s.db.GetStaffCourses(ctx, id)
-	if err != nil {
-		return nil, status.Errorf(codes.NotFound, "courses not found: %v", err)
-	}
-
-	return &spb.GetCoursesResponse{Courses: courses}, nil
 }
 
 // CreateStaffMember creates a new staff member.
@@ -117,7 +96,7 @@ func (s *staffServer) UpdateStaffMember(ctx context.Context, req *spb.UpdateStaf
 	}
 
 	logger := klog.FromContext(ctx)
-	logger.V(traceVerbosity).Info("Received UpdateStaffMember request", "staffMemberID", req.GetStaffMember().GetId())
+	logger.V(traceVerbosity).Info("Received UpdateStaffMember request", "staffMemberID", req.GetStaffMember().GetStaffID())
 
 	if err := s.db.UpdateStaff(ctx, req.GetStaffMember()); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to update staff member: %v", err)
@@ -136,7 +115,7 @@ func (s *staffServer) DeleteStaffMember(ctx context.Context, req *spb.DeleteStaf
 	}
 
 	logger := klog.FromContext(ctx)
-	id := req.GetId()
+	id := req.GetStaffID()
 	logger.V(traceVerbosity).Info("Received DeleteStaffMember request", "staffMemberID", id)
 
 	if err := s.db.DeleteStaff(ctx, id); err != nil {
