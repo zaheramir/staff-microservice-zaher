@@ -1,3 +1,4 @@
+// main package to be able to run the StaffServer for now
 package main
 
 import (
@@ -9,7 +10,6 @@ import (
 
 	spb "github.com/BetterGR/staff-microservice/protos"
 	ms "github.com/TekClinic/MicroService-Lib"
-	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -17,19 +17,35 @@ import (
 )
 
 const (
+	// define address.
 	connectionProtocol = "tcp"
-	traceVerbosity     = 0
+	// Debugging logs.
+	logLevelDebug = 5
 )
 
-// staffServer implements staffProtos.StaffServiceServer.
-type staffServer struct {
+// StaffServer is an implementation of GRPC Staff microservice.
+type StaffServer struct {
 	ms.BaseServiceServer
-	spb.UnimplementedStaffServiceServer
 	db *Database
+	spb.UnimplementedStaffServiceServer
+	Claims ms.Claims
 }
 
-// createStaffMicroserviceServer initiates the mslib for staff microservice.
-func createStaffMicroserviceServer() (*staffServer, error) {
+// VerifyToken returns the injected Claims instead of the default.
+func (s *StaffServer) VerifyToken(ctx context.Context, token string) error {
+	if s.Claims != nil {
+		return nil
+	}
+
+	// Default behavior.
+	if _, err := s.BaseServiceServer.VerifyToken(ctx, token); err != nil {
+		return fmt.Errorf("failed to verify token: %w", err)
+	}
+
+	return nil
+}
+
+func initStaffMicroserviceServer() (*StaffServer, error) {
 	base, err := ms.CreateBaseServiceServer()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create base service: %w", err)
@@ -40,120 +56,121 @@ func createStaffMicroserviceServer() (*staffServer, error) {
 		return nil, fmt.Errorf("failed to initialize database: %w", err)
 	}
 
-	return &staffServer{
+	return &StaffServer{
 		BaseServiceServer:               base,
-		UnimplementedStaffServiceServer: spb.UnimplementedStaffServiceServer{},
 		db:                              database,
+		UnimplementedStaffServiceServer: spb.UnimplementedStaffServiceServer{},
 	}, nil
 }
 
-// GetStaffMember retrieves a specific staff member.
-func (s *staffServer) GetStaffMember(ctx context.Context, req *spb.GetStaffMemberRequest) (
-	*spb.GetStaffMemberResponse, error,
-) {
-	if _, err := s.VerifyToken(ctx, req.GetToken()); err != nil {
+// GetStaffMember search for the StaffMember that corresponds to the given id and returns them.
+func (s *StaffServer) GetStaffMember(ctx context.Context,
+	req *spb.GetStaffMemberRequest,
+) (*spb.GetStaffMemberResponse, error) {
+	if err := s.VerifyToken(ctx, req.GetToken()); err != nil {
 		return nil, fmt.Errorf("authentication failed: %w",
 			status.Error(codes.Unauthenticated, err.Error()))
 	}
 
 	logger := klog.FromContext(ctx)
-	logger.V(traceVerbosity).Info("Received GetStaffMember request", "staffMemberID", req.GetStaffID())
+	logger.V(logLevelDebug).Info("Received GetStaffMember request", "staffId", req.GetStaffID())
 
-	staffMember, err := s.db.GetStaff(ctx, req.GetStaffID())
+	staff, err := s.db.GetStaffMember(ctx, req.GetStaffID())
 	if err != nil {
 		return nil, status.Errorf(codes.NotFound, "staff member not found: %v", err)
 	}
 
-	return &spb.GetStaffMemberResponse{StaffMember: staffMember}, nil
+	return &spb.GetStaffMemberResponse{StaffMember: staff}, nil
 }
 
-// CreateStaffMember creates a new staff member.
-func (s *staffServer) CreateStaffMember(ctx context.Context, req *spb.CreateStaffMemberRequest) (
-	*spb.CreateStaffMemberResponse, error,
-) {
-	if _, err := s.VerifyToken(ctx, req.GetToken()); err != nil {
+// CreateStaffMember creates a new StaffMember with the given details and returns them.
+func (s *StaffServer) CreateStaffMember(ctx context.Context,
+	req *spb.CreateStaffMemberRequest,
+) (*spb.CreateStaffMemberResponse, error) {
+	if err := s.VerifyToken(ctx, req.GetToken()); err != nil {
 		return nil, fmt.Errorf("authentication failed: %w",
 			status.Error(codes.Unauthenticated, err.Error()))
 	}
 
 	logger := klog.FromContext(ctx)
-	logger.V(traceVerbosity).Info("Received CreateStaffMember request", "firstName", req.GetStaffMember().GetFirstName())
+	logger.V(logLevelDebug).Info("Received CreateStaffMember request",
+		"firstName", req.GetStaffMember().GetFirstName(), "secondName", req.GetStaffMember().GetSecondName())
 
-	if err := s.db.AddStaff(ctx, req.GetStaffMember()); err != nil {
+	if err := s.db.AddStaffMember(ctx, req.GetStaffMember()); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create staff member: %v", err)
 	}
 
-	return &spb.CreateStaffMemberResponse{StaffMember: req.GetStaffMember()}, nil
+	return &spb.CreateStaffMemberResponse{}, nil
 }
 
-// UpdateStaffMember updates details of an existing staff member.
-func (s *staffServer) UpdateStaffMember(ctx context.Context, req *spb.UpdateStaffMemberRequest) (
-	*spb.UpdateStaffMemberResponse, error,
-) {
-	if _, err := s.VerifyToken(ctx, req.GetToken()); err != nil {
+// UpdateStaffMember updates the given StaffMember and returns them after the update.
+func (s *StaffServer) UpdateStaffMember(ctx context.Context,
+	req *spb.UpdateStaffMemberRequest,
+) (*spb.UpdateStaffMemberResponse, error) {
+	if err := s.VerifyToken(ctx, req.GetToken()); err != nil {
 		return nil, fmt.Errorf("authentication failed: %w",
 			status.Error(codes.Unauthenticated, err.Error()))
 	}
 
 	logger := klog.FromContext(ctx)
-	logger.V(traceVerbosity).Info("Received UpdateStaffMember request", "staffMemberID", req.GetStaffMember().GetStaffID())
+	logger.V(logLevelDebug).Info("Received UpdateStaffMember request",
+		"firstName", req.GetStaffMember().GetFirstName(), "secondName", req.GetStaffMember().GetSecondName())
 
-	if err := s.db.UpdateStaff(ctx, req.GetStaffMember()); err != nil {
+	if err := s.db.UpdateStaffMember(ctx, req.GetStaffMember()); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to update staff member: %v", err)
 	}
 
-	return &spb.UpdateStaffMemberResponse{StaffMember: req.GetStaffMember()}, nil
+	return &spb.UpdateStaffMemberResponse{}, nil
 }
 
-// DeleteStaffMember deletes a specific staff member.
-func (s *staffServer) DeleteStaffMember(ctx context.Context, req *spb.DeleteStaffMemberRequest) (
-	*spb.DeleteStaffMemberResponse, error,
-) {
-	if _, err := s.VerifyToken(ctx, req.GetToken()); err != nil {
+// DeleteStaffMember deletes the StaffMember from the system.
+func (s *StaffServer) DeleteStaffMember(ctx context.Context,
+	req *spb.DeleteStaffMemberRequest,
+) (*spb.DeleteStaffMemberResponse, error) {
+	if err := s.VerifyToken(ctx, req.GetToken()); err != nil {
 		return nil, fmt.Errorf("authentication failed: %w",
 			status.Error(codes.Unauthenticated, err.Error()))
 	}
 
 	logger := klog.FromContext(ctx)
-	id := req.GetStaffID()
-	logger.V(traceVerbosity).Info("Received DeleteStaffMember request", "staffMemberID", id)
+	logger.V(logLevelDebug).Info("Received DeleteStaffMember request", "staffId", req.GetStaffID())
 
-	if err := s.db.DeleteStaff(ctx, id); err != nil {
+	if err := s.db.DeleteStaffMember(ctx, req.GetStaffID()); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to delete staff member: %v", err)
 	}
+
+	logger.V(logLevelDebug).Info("Deleted", "staffId", req.GetStaffID())
 
 	return &spb.DeleteStaffMemberResponse{}, nil
 }
 
+// main StaffServer function.
 func main() {
+	// init klog
 	klog.InitFlags(nil)
 	flag.Parse()
 
-	err := godotenv.Load()
-	if err != nil {
-		klog.Fatalf("Error loading .env file")
-	}
-
 	// init the StaffServer
-	server, err := createStaffMicroserviceServer()
+	server, err := initStaffMicroserviceServer()
 	if err != nil {
-		klog.Error("Failed to init StaffServer", err)
+		klog.Fatalf("Failed to init StaffServer: %v", err)
 	}
 
-	// create a listener on the port specified in file .env
-	address := os.Getenv("GRPC_PORT")
+	// create a listener on port 'address'
+	address := os.Getenv("STAFF_PORT")
 
-	listener, err := net.Listen(connectionProtocol, address)
+	lis, err := net.Listen(connectionProtocol, address)
 	if err != nil {
-		klog.Error("Failed to listen:", err)
+		klog.Fatalf("Failed to listen: %v", err)
 	}
 
-	klog.Info("Starting StudentsServer on port: ", address)
+	klog.V(logLevelDebug).Info("Starting StaffServer on port: ", address)
 	// create a grpc StaffServer
 	grpcServer := grpc.NewServer()
 	spb.RegisterStaffServiceServer(grpcServer, server)
 
-	if err := grpcServer.Serve(listener); err != nil {
-		klog.Error("Failed to serve:", err)
+	// serve the grpc StaffServer
+	if err := grpcServer.Serve(lis); err != nil {
+		klog.Fatalf("Failed to serve: %v", err)
 	}
 }

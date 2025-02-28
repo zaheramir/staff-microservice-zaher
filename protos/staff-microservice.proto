@@ -34,7 +34,6 @@ message CreateStaffMemberRequest {
 
 // Response message contains the new staff member details.
 message CreateStaffMemberResponse {
-	StaffMember staffMember = 1;
 }
 
 // Request message for updating a staff member.
@@ -45,7 +44,6 @@ message UpdateStaffMemberRequest {
 
 // Request message with the updated staff member details.
 message UpdateStaffMemberResponse {
-	StaffMember staffMember = 1;
 }
 
 // Request message for deleting a staff member.
@@ -55,7 +53,8 @@ message DeleteStaffMemberRequest {
 }
 
 // Response message for deleting a staff member - no data returned.
-message DeleteStaffMemberResponse {}
+message DeleteStaffMemberResponse {
+}
 
 // StaffMember message includes:
 message StaffMember {
@@ -66,5 +65,4 @@ message StaffMember {
 	string phoneNumber = 5;
 	string title = 6;
 	string office = 7;
-	repeated string courses = 8;
 }

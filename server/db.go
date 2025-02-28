@@ -20,6 +20,12 @@ type Database struct {
 	db *bun.DB
 }
 
+var (
+	ErrStaffMemberNil      = errors.New("staff member is nil")
+	ErrStaffMemberIDEmpty  = errors.New("staff member ID is empty")
+	ErrStaffMemberNotFound = errors.New("staff member not found")
+)
+
 // InitializeDatabase ensures that the database exists and initializes the schema.
 func InitializeDatabase() (*Database, error) {
 	createDatabaseIfNotExists()
@@ -60,9 +66,9 @@ func createDatabaseIfNotExists() {
 			klog.Fatalf("Failed to create database: %v", err)
 		}
 
-		klog.Infof("Database %s created successfully.", dbName)
+		klog.V(logLevelDebug).Infof("Database %s created successfully.", dbName)
 	} else {
-		klog.Infof("Database %s already exists.", dbName)
+		klog.V(logLevelDebug).Infof("Database %s already exists.", dbName)
 	}
 }
 
@@ -78,7 +84,7 @@ func ConnectDB() (*Database, error) {
 		return nil, fmt.Errorf("failed to connect to the database: %w", err)
 	}
 
-	klog.Info("Connected to PostgreSQL database.")
+	klog.V(logLevelDebug).Info("Connected to PostgreSQL database.")
 
 	return &Database{db: database}, nil
 }
@@ -86,7 +92,7 @@ func ConnectDB() (*Database, error) {
 // createSchemaIfNotExists creates the database schema if it doesn't exist.
 func (d *Database) createSchemaIfNotExists(ctx context.Context) error {
 	models := []interface{}{
-		(*Staff)(nil),
+		(*StaffMember)(nil),
 	}
 
 	for _, model := range models {
@@ -95,13 +101,13 @@ func (d *Database) createSchemaIfNotExists(ctx context.Context) error {
 		}
 	}
 
-	klog.Info("Database schema initialized.")
+	klog.V(logLevelDebug).Info("Database schema initialized.")
 
 	return nil
 }
 
-// Staff represents the staff table.
-type Staff struct {
+// StaffMember represents the staff_member table.
+type StaffMember struct {
 	StaffID     string    `bun:"staff_id,unique,notnull"`
 	FirstName   string    `bun:"first_name,notnull"`
 	LastName    string    `bun:"last_name,notnull"`
@@ -113,9 +119,13 @@ type Staff struct {
 	UpdatedAt   time.Time `bun:"updated_at,default:current_timestamp"`
 }
 
-// AddStaff adds a new staff member.
-func (d *Database) AddStaff(ctx context.Context, staff *spb.StaffMember) error {
-	_, err := d.db.NewInsert().Model(&Staff{
+// AddStaffMember adds a new staff member.
+func (d *Database) AddStaffMember(ctx context.Context, staff *spb.StaffMember) error {
+	if staff == nil {
+		return fmt.Errorf("%w", ErrStaffMemberNil)
+	}
+
+	_, err := d.db.NewInsert().Model(&StaffMember{
 		StaffID:     staff.GetStaffID(),
 		FirstName:   staff.GetFirstName(),
 		LastName:    staff.GetSecondName(),
@@ -125,17 +135,21 @@ func (d *Database) AddStaff(ctx context.Context, staff *spb.StaffMember) error {
 		Office:      staff.GetOffice(),
 	}).Exec(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to add staff: %w", err)
+		return fmt.Errorf("failed to add staff member: %w", err)
 	}
 
 	return nil
 }
 
-// GetStaff retrieves a staff member by ID.
-func (d *Database) GetStaff(ctx context.Context, id string) (*spb.StaffMember, error) {
-	staffMember := new(Staff)
-	if err := d.db.NewSelect().Model(staffMember).Where("staff_id = ?", id).Scan(ctx); err != nil {
-		return nil, fmt.Errorf("failed to get staff: %w", err)
+// GetStaffMember retrieves a staff member by ID.
+func (d *Database) GetStaffMember(ctx context.Context, staffID string) (*spb.StaffMember, error) {
+	if staffID == "" {
+		return nil, fmt.Errorf("%w", ErrStaffMemberIDEmpty)
+	}
+
+	staffMember := new(StaffMember)
+	if err := d.db.NewSelect().Model(staffMember).Where("staff_id = ?", staffID).Scan(ctx); err != nil {
+		return nil, fmt.Errorf("failed to get staff member: %w", err)
 	}
 
 	return &spb.StaffMember{
@@ -149,9 +163,13 @@ func (d *Database) GetStaff(ctx context.Context, id string) (*spb.StaffMember, e
 	}, nil
 }
 
-// UpdateStaff updates an existing staff member.
-func (d *Database) UpdateStaff(ctx context.Context, staff *spb.StaffMember) error {
-	_, err := d.db.NewUpdate().Model(&Staff{
+// UpdateStaffMember updates an existing staff member.
+func (d *Database) UpdateStaffMember(ctx context.Context, staff *spb.StaffMember) error {
+	if staff == nil {
+		return fmt.Errorf("%w", ErrStaffMemberNil)
+	}
+
+	res, err := d.db.NewUpdate().Model(&StaffMember{
 		StaffID:     staff.GetStaffID(),
 		FirstName:   staff.GetFirstName(),
 		LastName:    staff.GetSecondName(),
@@ -161,17 +179,29 @@ func (d *Database) UpdateStaff(ctx context.Context, staff *spb.StaffMember) erro
 		Office:      staff.GetOffice(),
 	}).Where("staff_id = ?", staff.GetStaffID()).Exec(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to update staff: %w", err)
+		return fmt.Errorf("failed to update staff member: %w", err)
+	}
+
+	if num, _ := res.RowsAffected(); num == 0 {
+		return fmt.Errorf("%w", ErrStaffMemberNotFound)
 	}
 
 	return nil
 }
 
-// DeleteStaff deletes a staff member by ID.
-func (d *Database) DeleteStaff(ctx context.Context, id string) error {
-	_, err := d.db.NewDelete().Model((*Staff)(nil)).Where("staff_id = ?", id).Exec(ctx)
+// DeleteStaffMember deletes a staff member by ID.
+func (d *Database) DeleteStaffMember(ctx context.Context, id string) error {
+	if id == "" {
+		return fmt.Errorf("%w", ErrStaffMemberIDEmpty)
+	}
+
+	res, err := d.db.NewDelete().Model((*StaffMember)(nil)).Where("staff_id = ?", id).Exec(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to delete staff: %w", err)
+		return fmt.Errorf("failed to delete staff member: %w", err)
+	}
+
+	if num, _ := res.RowsAffected(); num == 0 {
+		return fmt.Errorf("%w", ErrStaffMemberNotFound)
 	}
 
 	return nil
