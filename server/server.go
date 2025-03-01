@@ -80,7 +80,17 @@ func (s *StaffServer) GetStaffMember(ctx context.Context,
 		return nil, status.Errorf(codes.NotFound, "staff member not found: %v", err)
 	}
 
-	return &spb.GetStaffMemberResponse{StaffMember: staff}, nil
+	staffMember := &spb.StaffMember{
+		StaffID:     staff.StaffID,
+		FirstName:   staff.FirstName,
+		LastName:    staff.LastName,
+		Email:       staff.Email,
+		PhoneNumber: staff.PhoneNumber,
+		Title:       staff.Title,
+		Office:      staff.Office,
+	}
+
+	return &spb.GetStaffMemberResponse{StaffMember: staffMember}, nil
 }
 
 // CreateStaffMember creates a new StaffMember with the given details and returns them.
@@ -94,13 +104,13 @@ func (s *StaffServer) CreateStaffMember(ctx context.Context,
 
 	logger := klog.FromContext(ctx)
 	logger.V(logLevelDebug).Info("Received CreateStaffMember request",
-		"firstName", req.GetStaffMember().GetFirstName(), "secondName", req.GetStaffMember().GetSecondName())
+		"firstName", req.GetStaffMember().GetFirstName(), "secondName", req.GetStaffMember().GetLastName())
 
-	if err := s.db.AddStaffMember(ctx, req.GetStaffMember()); err != nil {
+	if _, err := s.db.AddStaffMember(ctx, req.GetStaffMember()); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create staff member: %v", err)
 	}
 
-	return &spb.CreateStaffMemberResponse{}, nil
+	return &spb.CreateStaffMemberResponse{StaffMember: req.GetStaffMember()}, nil
 }
 
 // UpdateStaffMember updates the given StaffMember and returns them after the update.
@@ -114,13 +124,24 @@ func (s *StaffServer) UpdateStaffMember(ctx context.Context,
 
 	logger := klog.FromContext(ctx)
 	logger.V(logLevelDebug).Info("Received UpdateStaffMember request",
-		"firstName", req.GetStaffMember().GetFirstName(), "secondName", req.GetStaffMember().GetSecondName())
+		"firstName", req.GetStaffMember().GetFirstName(), "secondName", req.GetStaffMember().GetLastName())
 
-	if err := s.db.UpdateStaffMember(ctx, req.GetStaffMember()); err != nil {
+	updatedStaff, err := s.db.UpdateStaffMember(ctx, req.GetStaffMember())
+	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to update staff member: %v", err)
 	}
 
-	return &spb.UpdateStaffMemberResponse{}, nil
+	staff := &spb.StaffMember{
+		StaffID:     updatedStaff.StaffID,
+		FirstName:   updatedStaff.FirstName,
+		LastName:    updatedStaff.LastName,
+		Email:       updatedStaff.Email,
+		PhoneNumber: updatedStaff.PhoneNumber,
+		Title:       updatedStaff.Title,
+		Office:      updatedStaff.Office,
+	}
+
+	return &spb.UpdateStaffMemberResponse{StaffMember: staff}, nil
 }
 
 // DeleteStaffMember deletes the StaffMember from the system.

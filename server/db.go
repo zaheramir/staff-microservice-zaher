@@ -108,41 +108,42 @@ func (d *Database) createSchemaIfNotExists(ctx context.Context) error {
 
 // StaffMember represents the staff_member table.
 type StaffMember struct {
-	StaffID     string    `bun:"staff_id,unique,notnull"`
+	StaffID     string    `bun:"staff_id,unique,pk,notnull"`
 	FirstName   string    `bun:"first_name,notnull"`
 	LastName    string    `bun:"last_name,notnull"`
 	Email       string    `bun:"email,unique,notnull"`
 	PhoneNumber string    `bun:"phone_number,unique,notnull"`
-	Title       string    `bun:"title,notnull"`
-	Office      string    `bun:"office,notnull"`
+	Title       string    `bun:"title"`
+	Office      string    `bun:"office"`
 	CreatedAt   time.Time `bun:"created_at,default:current_timestamp"`
 	UpdatedAt   time.Time `bun:"updated_at,default:current_timestamp"`
 }
 
 // AddStaffMember adds a new staff member.
-func (d *Database) AddStaffMember(ctx context.Context, staff *spb.StaffMember) error {
+func (d *Database) AddStaffMember(ctx context.Context, staff *spb.StaffMember) (*StaffMember, error) {
 	if staff == nil {
-		return fmt.Errorf("%w", ErrStaffMemberNil)
+		return nil, fmt.Errorf("%w", ErrStaffMemberNil)
 	}
 
-	_, err := d.db.NewInsert().Model(&StaffMember{
+	newStaffMember := &StaffMember{
 		StaffID:     staff.GetStaffID(),
 		FirstName:   staff.GetFirstName(),
-		LastName:    staff.GetSecondName(),
+		LastName:    staff.GetLastName(),
 		Email:       staff.GetEmail(),
 		PhoneNumber: staff.GetPhoneNumber(),
 		Title:       staff.GetTitle(),
 		Office:      staff.GetOffice(),
-	}).Exec(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to add staff member: %w", err)
 	}
 
-	return nil
+	if _, err := d.db.NewInsert().Model(newStaffMember).Exec(ctx); err != nil {
+		return nil, fmt.Errorf("failed to add staff member: %w", err)
+	}
+
+	return newStaffMember, nil
 }
 
 // GetStaffMember retrieves a staff member by ID.
-func (d *Database) GetStaffMember(ctx context.Context, staffID string) (*spb.StaffMember, error) {
+func (d *Database) GetStaffMember(ctx context.Context, staffID string) (*StaffMember, error) {
 	if staffID == "" {
 		return nil, fmt.Errorf("%w", ErrStaffMemberIDEmpty)
 	}
@@ -152,41 +153,44 @@ func (d *Database) GetStaffMember(ctx context.Context, staffID string) (*spb.Sta
 		return nil, fmt.Errorf("failed to get staff member: %w", err)
 	}
 
-	return &spb.StaffMember{
-		StaffID:     staffMember.StaffID,
-		FirstName:   staffMember.FirstName,
-		SecondName:  staffMember.LastName,
-		Email:       staffMember.Email,
-		PhoneNumber: staffMember.PhoneNumber,
-		Title:       staffMember.Title,
-		Office:      staffMember.Office,
-	}, nil
+	return staffMember, nil
 }
 
 // UpdateStaffMember updates an existing staff member.
-func (d *Database) UpdateStaffMember(ctx context.Context, staff *spb.StaffMember) error {
+func (d *Database) UpdateStaffMember(ctx context.Context, staff *spb.StaffMember) (*StaffMember, error) {
 	if staff == nil {
-		return fmt.Errorf("%w", ErrStaffMemberNil)
+		return nil, fmt.Errorf("%w", ErrStaffMemberNil)
 	}
 
-	res, err := d.db.NewUpdate().Model(&StaffMember{
-		StaffID:     staff.GetStaffID(),
-		FirstName:   staff.GetFirstName(),
-		LastName:    staff.GetSecondName(),
-		Email:       staff.GetEmail(),
-		PhoneNumber: staff.GetPhoneNumber(),
-		Title:       staff.GetTitle(),
-		Office:      staff.GetOffice(),
-	}).Where("staff_id = ?", staff.GetStaffID()).Exec(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to update staff member: %w", err)
+	if staff.GetStaffID() == "" {
+		return nil, fmt.Errorf("%w", ErrStaffMemberIDEmpty)
 	}
 
-	if num, _ := res.RowsAffected(); num == 0 {
-		return fmt.Errorf("%w", ErrStaffMemberNotFound)
+	// get the existing staff member
+	existingStaffMember := &StaffMember{StaffID: staff.GetStaffID()}
+	if err := d.db.NewSelect().Model(existingStaffMember).WherePK().Scan(ctx); err != nil {
+		return nil, fmt.Errorf("failed to get staff member: %w", err)
 	}
 
-	return nil
+	// Update the fields.
+	updateField := func(field *string, newValue string) {
+		if newValue != "" {
+			*field = newValue
+		}
+	}
+
+	updateField(&existingStaffMember.FirstName, staff.GetFirstName())
+	updateField(&existingStaffMember.LastName, staff.GetLastName())
+	updateField(&existingStaffMember.Email, staff.GetEmail())
+	updateField(&existingStaffMember.PhoneNumber, staff.GetPhoneNumber())
+	updateField(&existingStaffMember.Title, staff.GetTitle())
+	updateField(&existingStaffMember.Office, staff.GetOffice())
+
+	if _, err := d.db.NewUpdate().Model(existingStaffMember).WherePK().Exec(ctx); err != nil {
+		return nil, fmt.Errorf("failed to update staff member: %w", err)
+	}
+
+	return existingStaffMember, nil
 }
 
 // DeleteStaffMember deletes a staff member by ID.

@@ -76,7 +76,7 @@ func createTestStaffMember() *spb.StaffMember {
 	return &spb.StaffMember{
 		StaffID:     uuid.New().String(),
 		FirstName:   "John",
-		SecondName:  "Doe",
+		LastName:    "Doe",
 		Email:       "john.doe@example.com",
 		PhoneNumber: "1234567890",
 	}
@@ -155,8 +155,9 @@ func TestCreateStaffMemberSuccessful(t *testing.T) {
 	staffMember := createTestStaffMember()
 	req := &spb.CreateStaffMemberRequest{StaffMember: staffMember, Token: "test-token"}
 
-	_, err := client.CreateStaffMember(t.Context(), req)
+	resp, err := client.CreateStaffMember(t.Context(), req)
 	require.NoError(t, err)
+	assert.Equal(t, resp.GetStaffMember().GetEmail(), staffMember.GetEmail())
 
 	// Cleanup.
 	_, _ = client.DeleteStaffMember(t.Context(),
@@ -190,8 +191,9 @@ func TestUpdateStaffMemberSuccessful(t *testing.T) {
 	staffMember.FirstName = "UpdatedName"
 	req := &spb.UpdateStaffMemberRequest{StaffMember: staffMember, Token: "test-token"}
 
-	_, err = client.UpdateStaffMember(t.Context(), req)
+	resp, err := client.UpdateStaffMember(t.Context(), req)
 	require.NoError(t, err)
+	assert.Equal(t, resp.GetStaffMember().GetFirstName(), staffMember.GetFirstName())
 	// Cleanup.
 
 	_, _ = client.DeleteStaffMember(t.Context(),
