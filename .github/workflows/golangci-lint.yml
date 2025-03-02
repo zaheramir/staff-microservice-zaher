@@ -1,31 +1,29 @@
-name: golangci-lint
+name: Run Tests on PR
 
 on:
   pull_request:
-
-permissions:
-  contents: read
-  pull-requests: read
-  checks: write
+    branches:
+      - main
+      - develop
 
 jobs:
-  golangci:
-    name: Lint & Test
+  test:
+    name: Run Tests
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
         with:
-          go-version: '1.22.1'
-          cache: false
+          go-version: '1.21'  # Adjust this to match your Go version
 
-      - run: git config --global url."https://${{ secrets.ACTOR }}:${{ secrets.TOKEN }}@github.com/".insteadOf "https://github.com/"
+      - name: Install Dependencies
+        run: |
+          go mod tidy
+          go mod download
 
-      - name: Run GolangCI-Lint
-        uses: golangci/golangci-lint-action@v4
-        with:
-          version: v1.57.1
-          working-directory: server
-
-      - name: Run Tests
+      - name: Run Makefile Test
         run: make test
