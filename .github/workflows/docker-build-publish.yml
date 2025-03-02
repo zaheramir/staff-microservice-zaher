@@ -26,10 +26,10 @@ jobs:
 
       - name: Build Docker Image
         run: |
-          docker build -t ghcr.io/bettergr/staff-microservice:${{ github.sha }} .
-          docker tag ghcr.io/bettergr/staff-microservice:${{ github.sha }} ghcr.io/your-org/staff-microservice:latest
+          docker build -t ghcr.io/zaheramir/staff-microservice-zaher:${{ github.sha }} .
+          docker tag ghcr.io/zaheramir/staff-microservice-zaher:${{ github.sha }} ghcr.io/your-org/staff-microservice:latest
 
       - name: Push Docker Image
         run: |
-          docker push ghcr.io/bettergr/staff-microservice:${{ github.sha }}
-          docker push ghcr.io/bettergr/staff-microservice:latest
+          docker push ghcr.io/zaheramir/staff-microservice-zaher:${{ github.sha }}
+          docker push ghcr.io/zaheramir/staff-microservice-zaher:latest
