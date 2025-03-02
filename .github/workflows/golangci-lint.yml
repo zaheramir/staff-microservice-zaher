@@ -19,10 +19,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Set up Go
+      - name: Set up Go 1.24
         uses: actions/setup-go@v4
         with:
-          go-version: '1.24.0'  # Ensure this matches your project's Go version
+          go-version: '1.24'  # Ensure we use Go 1.24
+
+      - name: Verify Go Version
+        run: go version
 
       - name: Install Protobuf Compiler and Plugins
         run: |
@@ -39,6 +42,16 @@ jobs:
           go mod download
           go mod vendor  # Ensure all dependencies are available
 
+      - name: Install GolangCI-Lint with Go 1.24
+        run: |
+          GOBIN=$(go env GOPATH)/bin go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
+
+      - name: Verify GolangCI-Lint Version
+        run: golangci-lint --version
+
+      - name: Run GolangCI-Lint
+        run: golangci-lint run --timeout=5m
 
       - name: Run Makefile Test
         run: make test
