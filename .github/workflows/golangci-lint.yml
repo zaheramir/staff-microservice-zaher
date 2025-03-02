@@ -6,7 +6,7 @@ jobs:
     env:
       GO_VERSION: '1.24'
       GRPC_PORT: '50053'  
-      AUTH_ISSUER: 'http://auth.BetterGR.org'  
+      AUTH_ISSUER: 'http://auth.BetterGR.org'
       DSN: 'postgres://postgres:bettergr2425@localhost:5432/bettergr?sslmode=disable'  
       DP_NAME: 'bettergr'  
 
