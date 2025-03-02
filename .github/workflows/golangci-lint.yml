@@ -1,0 +1,23 @@
+jobs:
+  lint:
+    name: Lint Code with GolangCI-Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'  # Adjust to match your Go version
+
+      - name: Install Dependencies
+        run: |
+          go get k8s.io/klog/v2
+          go mod tidy
+          go mod download
+          go mod vendor  # Ensures all dependencies are available
+
+      - name: Run Makefile Tests
+        run: make test  # Runs your Makefile test target
