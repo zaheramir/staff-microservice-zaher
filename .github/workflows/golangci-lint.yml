@@ -1,27 +1,40 @@
 name: GolangCI-Lint
 
 on:
-  pull_request:  # Run only on pull requests
+  pull_request:
+    branches:
+      - main  # Change to your default branch if different
 
 jobs:
   lint:
-    name: Run golangci-lint
+    name: Run GolangCI-Lint
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Go
+      - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.24'  # Adjust based on your Go version
+          go-version: 1.24  # Change to your project's Go version
 
-      - name: Install golangci-lint
-        run: |
-          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.57.1
-          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
+      - name: Cache Go modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
 
-      - name: Run golangci-lint
+      - name: Install GolangCI-Lint
+        uses: golangci/golangci-lint-action@v4
+        with:
+          version: latest
+          args: --timeout=5m --path-prefix=server
+
+      - name: Run GolangCI-Lint
         run: |
           golangci-lint run --out-format=github-actions --path-prefix=server
