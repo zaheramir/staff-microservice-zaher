@@ -68,10 +68,10 @@ func initStaffMicroserviceServer() (*StaffServer, error) {
 func (s *StaffServer) GetStaffMember(ctx context.Context,
 	req *spb.GetStaffMemberRequest,
 ) (*spb.GetStaffMemberResponse, error) {
-	//if err := s.VerifyToken(ctx, req.GetToken()); err != nil {
-	//	return nil, fmt.Errorf("authentication failed: %w",
-	//		status.Error(codes.Unauthenticated, err.Error()))
-	//}
+	if err := s.VerifyToken(ctx, req.GetToken()); err != nil {
+		return nil, fmt.Errorf("authentication failed: %w",
+			status.Error(codes.Unauthenticated, err.Error()))
+	}
 
 	logger := klog.FromContext(ctx)
 	logger.V(logLevelDebug).Info("Received GetStaffMember request", "staffId", req.GetStaffID())
@@ -98,10 +98,10 @@ func (s *StaffServer) GetStaffMember(ctx context.Context,
 func (s *StaffServer) CreateStaffMember(ctx context.Context,
 	req *spb.CreateStaffMemberRequest,
 ) (*spb.CreateStaffMemberResponse, error) {
-	//if err := s.VerifyToken(ctx, req.GetToken()); err != nil {
-	//	return nil, fmt.Errorf("authentication failed: %w",
-	//		status.Error(codes.Unauthenticated, err.Error()))
-	//}
+	if err := s.VerifyToken(ctx, req.GetToken()); err != nil {
+		return nil, fmt.Errorf("authentication failed: %w",
+			status.Error(codes.Unauthenticated, err.Error()))
+	}
 
 	logger := klog.FromContext(ctx)
 	logger.V(logLevelDebug).Info("Received CreateStaffMember request",
@@ -118,10 +118,10 @@ func (s *StaffServer) CreateStaffMember(ctx context.Context,
 func (s *StaffServer) UpdateStaffMember(ctx context.Context,
 	req *spb.UpdateStaffMemberRequest,
 ) (*spb.UpdateStaffMemberResponse, error) {
-	//if err := s.VerifyToken(ctx, req.GetToken()); err != nil {
-	//	return nil, fmt.Errorf("authentication failed: %w",
-	//		status.Error(codes.Unauthenticated, err.Error()))
-	//}
+	if err := s.VerifyToken(ctx, req.GetToken()); err != nil {
+		return nil, fmt.Errorf("authentication failed: %w",
+			status.Error(codes.Unauthenticated, err.Error()))
+	}
 
 	logger := klog.FromContext(ctx)
 	logger.V(logLevelDebug).Info("Received UpdateStaffMember request",
@@ -149,10 +149,10 @@ func (s *StaffServer) UpdateStaffMember(ctx context.Context,
 func (s *StaffServer) DeleteStaffMember(ctx context.Context,
 	req *spb.DeleteStaffMemberRequest,
 ) (*spb.DeleteStaffMemberResponse, error) {
-	//if err := s.VerifyToken(ctx, req.GetToken()); err != nil {
-	//	return nil, fmt.Errorf("authentication failed: %w",
-	//		status.Error(codes.Unauthenticated, err.Error()))
-	//}
+	if err := s.VerifyToken(ctx, req.GetToken()); err != nil {
+		return nil, fmt.Errorf("authentication failed: %w",
+			status.Error(codes.Unauthenticated, err.Error()))
+	}
 
 	logger := klog.FromContext(ctx)
 	logger.V(logLevelDebug).Info("Received DeleteStaffMember request", "staffId", req.GetStaffID())
