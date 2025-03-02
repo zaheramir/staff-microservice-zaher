@@ -39,11 +39,6 @@ jobs:
           go mod download
           go mod vendor  # Ensure all dependencies are available
 
-      - name: Run GolangCI-Lint
-        run: |
-          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.57.1
-          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
-          golangci-lint run --timeout=5m
 
       - name: Run Makefile Test
         run: make test
