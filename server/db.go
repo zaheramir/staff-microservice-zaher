@@ -15,7 +15,7 @@ import (
 	"k8s.io/klog/v2"
 )
 
-// DataBase represents the PostgreSQL database connection.
+// Database represents the PostgreSQL database connection.
 type Database struct {
 	db *bun.DB
 }
