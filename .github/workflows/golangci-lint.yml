@@ -22,10 +22,12 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
-          go-version: '1.21'  # Change this to match your Go version
+          go-version: '1.21'  # Adjust to your Go version
 
-      - name: Install Dependencies
+      - name: Clean and Reset Dependencies
         run: |
+          rm -rf ~/.cache/go-build
+          rm -rf ~/go/pkg/mod
           go mod tidy
           go mod download
 
