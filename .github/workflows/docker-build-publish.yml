@@ -2,37 +2,35 @@ name: Build and Publish Docker Image
 
 on:
   push:
-    branches:
-      - main
-
-permissions:
-  packages: write
-  contents: read
 
 jobs:
   build:
+    permissions: write-all
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Repository
+      - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Set up Docker Build
         uses: docker/setup-buildx-action@v3
 
       - name: Log in to GitHub Container Registry
+        if: github.ref == 'refs/heads/main'
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build Docker Image
+      - name: Build Docker image
         run: |
-          docker build -t ghcr.io/zaheramir/staff-microservice-zaher:${{ github.sha }} .
-          docker tag ghcr.io/zaheramir/staff-microservice-zaher:${{ github.sha }} ghcr.io/<your-github-username>/staff-microservice:latest
+          docker build -t ghcr.io/zaheramir/staff-microservice-zaher:${{ github.sha }} --build-arg GITHUB_ACTOR=${{ secrets.ACTOR }} \
+            --build-arg GITHUB_TOKEN=${{ secrets.TOKEN }} .
+          docker tag ghcr.io/zaheramir/staff-microservice-zaher:${{ github.sha }} ghcr.io/zaheramir/staff-microservice-zaher:latest
 
-      - name: Push Docker Image
+      - name: Push Docker image
+        if: github.ref == 'refs/heads/main'
         run: |
           docker push ghcr.io/zaheramir/staff-microservice-zaher:${{ github.sha }}
           docker push ghcr.io/zaheramir/staff-microservice-zaher:latest
