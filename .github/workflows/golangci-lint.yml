@@ -1,3 +1,15 @@
+name: Run GolangCI-Lint and Makefile Test
+
+on:
+  pull_request:
+    branches:
+      - main
+      - develop
+  push:
+    branches:
+      - main
+      - develop
+
 jobs:
   lint:
     name: Lint Code with GolangCI-Lint
@@ -10,14 +22,23 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
-          go-version: '1.21'  # Adjust to match your Go version
+          go-version: '1.21'  # Ensure this matches your project's Go version
+
+      - name: Install Protobuf Compiler and Plugins
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y protobuf-compiler
+          go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+          go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
 
       - name: Install Dependencies
         run: |
           go get k8s.io/klog/v2
           go mod tidy
           go mod download
-          go mod vendor  # Ensures all dependencies are available
+          go mod vendor  # Ensure all dependencies are available
 
-      - name: Run Makefile Tests
-        run: make test  # Runs your Makefile test target
+
+      - name: Run Makefile Test
+        run: make test
