@@ -15,7 +15,7 @@ jobs:
     name: Lint Code with GolangCI-Lint
     runs-on: ubuntu-latest
 
-    env: 
+    env:  
       GO_VERSION: '1.24'
       GRPC_PORT: '50053'  
       AUTH_ISSUER: 'http://auth.BetterGR.org'  
@@ -40,7 +40,7 @@ jobs:
       - name: Run GolangCI-Lint
         run: golangci-lint run --timeout=5m
 
-      - name: Setup Test Database  
+      - name: Setup Test Database
         run: |
           sudo apt-get install -y postgresql
           sudo systemctl start postgresql
@@ -48,7 +48,7 @@ jobs:
           sudo -u postgres psql -d bettergr -c "CREATE TABLE courses (id SERIAL PRIMARY KEY, name TEXT NOT NULL);"
 
       - name: Run Makefile Test with Environment Variables
-        env:
+        env:  
           GRPC_PORT: '50053'  
           AUTH_ISSUER: 'http://auth.BetterGR.org'  
           DSN: 'postgres://postgres:bettergr2425@localhost:5432/bettergr?sslmode=disable'  
