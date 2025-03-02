@@ -10,6 +10,7 @@ import (
 
 	spb "github.com/BetterGR/staff-microservice/protos"
 	ms "github.com/TekClinic/MicroService-Lib"
+	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -67,10 +68,10 @@ func initStaffMicroserviceServer() (*StaffServer, error) {
 func (s *StaffServer) GetStaffMember(ctx context.Context,
 	req *spb.GetStaffMemberRequest,
 ) (*spb.GetStaffMemberResponse, error) {
-	if err := s.VerifyToken(ctx, req.GetToken()); err != nil {
-		return nil, fmt.Errorf("authentication failed: %w",
-			status.Error(codes.Unauthenticated, err.Error()))
-	}
+	//if err := s.VerifyToken(ctx, req.GetToken()); err != nil {
+	//	return nil, fmt.Errorf("authentication failed: %w",
+	//		status.Error(codes.Unauthenticated, err.Error()))
+	//}
 
 	logger := klog.FromContext(ctx)
 	logger.V(logLevelDebug).Info("Received GetStaffMember request", "staffId", req.GetStaffID())
@@ -97,10 +98,10 @@ func (s *StaffServer) GetStaffMember(ctx context.Context,
 func (s *StaffServer) CreateStaffMember(ctx context.Context,
 	req *spb.CreateStaffMemberRequest,
 ) (*spb.CreateStaffMemberResponse, error) {
-	if err := s.VerifyToken(ctx, req.GetToken()); err != nil {
-		return nil, fmt.Errorf("authentication failed: %w",
-			status.Error(codes.Unauthenticated, err.Error()))
-	}
+	//if err := s.VerifyToken(ctx, req.GetToken()); err != nil {
+	//	return nil, fmt.Errorf("authentication failed: %w",
+	//		status.Error(codes.Unauthenticated, err.Error()))
+	//}
 
 	logger := klog.FromContext(ctx)
 	logger.V(logLevelDebug).Info("Received CreateStaffMember request",
@@ -117,10 +118,10 @@ func (s *StaffServer) CreateStaffMember(ctx context.Context,
 func (s *StaffServer) UpdateStaffMember(ctx context.Context,
 	req *spb.UpdateStaffMemberRequest,
 ) (*spb.UpdateStaffMemberResponse, error) {
-	if err := s.VerifyToken(ctx, req.GetToken()); err != nil {
-		return nil, fmt.Errorf("authentication failed: %w",
-			status.Error(codes.Unauthenticated, err.Error()))
-	}
+	//if err := s.VerifyToken(ctx, req.GetToken()); err != nil {
+	//	return nil, fmt.Errorf("authentication failed: %w",
+	//		status.Error(codes.Unauthenticated, err.Error()))
+	//}
 
 	logger := klog.FromContext(ctx)
 	logger.V(logLevelDebug).Info("Received UpdateStaffMember request",
@@ -148,10 +149,10 @@ func (s *StaffServer) UpdateStaffMember(ctx context.Context,
 func (s *StaffServer) DeleteStaffMember(ctx context.Context,
 	req *spb.DeleteStaffMemberRequest,
 ) (*spb.DeleteStaffMemberResponse, error) {
-	if err := s.VerifyToken(ctx, req.GetToken()); err != nil {
-		return nil, fmt.Errorf("authentication failed: %w",
-			status.Error(codes.Unauthenticated, err.Error()))
-	}
+	//if err := s.VerifyToken(ctx, req.GetToken()); err != nil {
+	//	return nil, fmt.Errorf("authentication failed: %w",
+	//		status.Error(codes.Unauthenticated, err.Error()))
+	//}
 
 	logger := klog.FromContext(ctx)
 	logger.V(logLevelDebug).Info("Received DeleteStaffMember request", "staffId", req.GetStaffID())
@@ -171,6 +172,11 @@ func main() {
 	klog.InitFlags(nil)
 	flag.Parse()
 
+	err := godotenv.Load()
+	if err != nil {
+		klog.Fatalf("Error loading .env file")
+	}
+
 	// init the StaffServer
 	server, err := initStaffMicroserviceServer()
 	if err != nil {
@@ -178,7 +184,7 @@ func main() {
 	}
 
 	// create a listener on port 'address'
-	address := os.Getenv("STAFF_PORT")
+	address := os.Getenv("GRPC_PORT")
 
 	lis, err := net.Listen(connectionProtocol, address)
 	if err != nil {
