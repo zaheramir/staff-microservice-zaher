@@ -1,4 +1,4 @@
-name: Run Tests on PR
+name: Run Makefile Test
 
 on:
   pull_request:
@@ -8,7 +8,7 @@ on:
 
 jobs:
   test:
-    name: Run Makefile Test
+    name: Run Make Test
     runs-on: ubuntu-latest
 
     steps:
@@ -18,17 +18,20 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
-          go-version: '1.21'  # Adjust this to your Go version
+          go-version: '1.21'
 
-      - name: Install Dependencies
+      - name: Install Protobuf Compiler
         run: |
-          sudo apt-get update
-          sudo apt-get install -y protobuf-compiler
-          go mod tidy
-          go mod download
+          sudo apt update
+          sudo apt install -y protobuf-compiler
 
-      - name: Verify `protoc` Installation
-        run: protoc --version
+      - name: Verify `.proto` File Exists
+        run: |
+          ls -la protos/
+          test -f protos/staff-microservice.proto || (echo "Error: .proto file missing!" && exit 1)
 
-      - name: Run Makefile Test
-        run: make test
+      - name: Run Makefile Test with Correct Service Name
+        env:
+          SERVICE_NAME: staff-microservice  # Override Makefile default
+        run: |
+          make test
