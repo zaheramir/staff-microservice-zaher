@@ -129,7 +129,7 @@ endif
 clean:
 	@echo [CLEAN] Removing generated files...
 ifeq ($(OS),Windows_NT)
-	@del /Q server\server.exe
+	@del /Q server\server
 	@del /Q protos\*.pb.go
 else
 	@rm -rf server/server
