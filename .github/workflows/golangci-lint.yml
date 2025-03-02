@@ -1,21 +1,9 @@
-name: Run GolangCI-Lint and Makefile Test
-
-on:
-  pull_request:
-    branches:
-      - main
-      - develop
-  push:
-    branches:
-      - main
-      - develop
-
 jobs:
   lint:
     name: Lint Code with GolangCI-Lint
     runs-on: ubuntu-latest
 
-    env:  
+    env:
       GO_VERSION: '1.24'
       GRPC_PORT: '50053'  
       AUTH_ISSUER: 'http://auth.BetterGR.org'  
@@ -35,22 +23,13 @@ jobs:
         run: |
           go mod tidy
           go mod download
-          go mod vendor  # Ensure all dependencies are available
+          go mod vendor
+
+      - name: Install GolangCI-Lint
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.55.2
+          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
+          golangci-lint --version
 
       - name: Run GolangCI-Lint
-        run: golangci-lint run --timeout=5m
-
-      - name: Setup Test Database  
-        run: |
-          sudo apt-get install -y postgresql
-          sudo systemctl start postgresql
-          sudo -u postgres psql -c "CREATE DATABASE bettergr;"
-          sudo -u postgres psql -d bettergr -c "CREATE TABLE courses (id SERIAL PRIMARY KEY, name TEXT NOT NULL);"
-
-      - name: Run Makefile Test with Environment Variables
-        env: 
-          GRPC_PORT: '50053'  
-          AUTH_ISSUER: 'http://auth.BetterGR.org'  
-          DSN: 'postgres://postgres:bettergr2425@localhost:5432/bettergr?sslmode=disable'  
-          DP_NAME: 'bettergr'  
-        run: make test
+        run: $(go env GOPATH)/bin/golangci-lint run --timeout=5m

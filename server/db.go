@@ -15,7 +15,7 @@ import (
 	"k8s.io/klog/v2"
 )
 
-// DataBase represents the PostgreSQL database connection.
+// Database represents the PostgreSQL database connection.
 type Database struct {
 	db *bun.DB
 }
@@ -106,7 +106,7 @@ func (d *Database) createSchemaIfNotExists(ctx context.Context) error {
 	return nil
 }
 
-// StaffMember represents the staff_member table.
+// StaffMember represents the staff_members table.
 type StaffMember struct {
 	StaffID     string    `bun:"staff_id,unique,pk,notnull"`
 	FirstName   string    `bun:"first_name,notnull"`
