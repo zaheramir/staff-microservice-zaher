@@ -1,1 +1,35 @@
+name: CI Pipeline for Staff Microservice
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    name: Run Tests and Linting
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: 1.20  # Change to match your `go.mod`
+
+      - name: Install Dependencies
+        run: go mod tidy
+
+      - name: Run Tests
+        run: go test ./...
+
+      - name: Run GolangCI-Lint
+        uses: golangci/golangci-lint-action@v3
+        with:
+          version: latest
 
