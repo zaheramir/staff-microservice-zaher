@@ -184,7 +184,7 @@ func main() {
 	}
 
 	// create a listener on port 'address'
-	address := os.Getenv("GRPC_PORT")
+	address := "localhost:" + os.Getenv("GRPC_PORT")
 
 	lis, err := net.Listen(connectionProtocol, address)
 	if err != nil {
