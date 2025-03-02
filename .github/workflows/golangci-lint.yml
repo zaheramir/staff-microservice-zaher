@@ -15,14 +15,21 @@ jobs:
     name: Lint Code with GolangCI-Lint
     runs-on: ubuntu-latest
 
+    env:  # 🌟 Define environment variables globally for all steps
+      GO_VERSION: '1.24'
+      GRPC_PORT: '50053'  
+      AUTH_ISSUER: 'http://auth.BetterGR.org'  
+      DSN: 'postgres://postgres:bettergr2425@localhost:5432/bettergr?sslmode=disable'  
+      DP_NAME: 'bettergr'  
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Set up Go 1.24
+      - name: Set up Go ${{ env.GO_VERSION }}
         uses: actions/setup-go@v4
         with:
-          go-version: '1.24'  # Ensure we use Go 1.24
+          go-version: ${{ env.GO_VERSION }}
 
       - name: Verify Go Version
         run: go version
@@ -42,7 +49,7 @@ jobs:
           go mod download
           go mod vendor  # Ensure all dependencies are available
 
-      - name: Install GolangCI-Lint with Go 1.24
+      - name: Install GolangCI-Lint with Go ${{ env.GO_VERSION }}
         run: |
           GOBIN=$(go env GOPATH)/bin go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
@@ -53,5 +60,11 @@ jobs:
       - name: Run GolangCI-Lint
         run: golangci-lint run --timeout=5m
 
-      - name: Run Makefile Test
-        run: make test
+      - name: Run Makefile Test with Environment Variables
+        run: |
+          echo "Running tests with:"
+          echo "GRPC_PORT: $GRPC_PORT"
+          echo "AUTH_ISSUER: $AUTH_ISSUER"
+          echo "DSN: $DSN"
+          echo "DP_NAME: $DP_NAME"
+          make test
