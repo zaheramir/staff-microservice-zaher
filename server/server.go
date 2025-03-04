@@ -78,7 +78,8 @@ func (s *StaffServer) GetStaffMember(ctx context.Context,
 
 	staff, err := s.db.GetStaffMember(ctx, req.GetStaffID())
 	if err != nil {
-		return nil, status.Errorf(codes.NotFound, "staff member not found: %v", err)
+		return nil, fmt.Errorf("staff member not found: %w",
+			status.Error(codes.NotFound, err.Error()))
 	}
 
 	staffMember := &spb.StaffMember{
@@ -108,7 +109,8 @@ func (s *StaffServer) CreateStaffMember(ctx context.Context,
 		"firstName", req.GetStaffMember().GetFirstName(), "secondName", req.GetStaffMember().GetLastName())
 
 	if _, err := s.db.AddStaffMember(ctx, req.GetStaffMember()); err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to create staff member: %v", err)
+		return nil, fmt.Errorf("failed to create staff member: %w",
+			status.Error(codes.Internal, err.Error()))
 	}
 
 	return &spb.CreateStaffMemberResponse{StaffMember: req.GetStaffMember()}, nil
@@ -129,7 +131,8 @@ func (s *StaffServer) UpdateStaffMember(ctx context.Context,
 
 	updatedStaff, err := s.db.UpdateStaffMember(ctx, req.GetStaffMember())
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to update staff member: %v", err)
+		return nil, fmt.Errorf("failed to update staff member: %w",
+			status.Error(codes.Internal, err.Error()))
 	}
 
 	staff := &spb.StaffMember{
@@ -158,7 +161,8 @@ func (s *StaffServer) DeleteStaffMember(ctx context.Context,
 	logger.V(logLevelDebug).Info("Received DeleteStaffMember request", "staffId", req.GetStaffID())
 
 	if err := s.db.DeleteStaffMember(ctx, req.GetStaffID()); err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to delete staff member: %v", err)
+		return nil, fmt.Errorf("failed to delete staff member: %w",
+			status.Error(codes.Internal, err.Error()))
 	}
 
 	logger.V(logLevelDebug).Info("Deleted", "staffId", req.GetStaffID())
