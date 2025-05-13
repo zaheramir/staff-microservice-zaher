@@ -10,7 +10,7 @@ PROTO_FLAGS = -I $(PROTO_DIR) $(PROTO_FILE) \
 DOCKER_IMAGE_NAME ?= $(SERVICE_NAME)
 DOCKER_TAG ?= latest
 DOCKERFILE ?= Dockerfile
-DOCKER_REGISTRY ?= ghcr.io/BetterGR
+DOCKER_REGISTRY ?= ghcr.io/bettergr
 
 # Default target
 all: proto gomod fmt vet lint
@@ -77,7 +77,7 @@ fmt: ensure-gofumpt ensure-gci
 	@go fmt ./...
 	@gofumpt -w .
 	@gci write --skip-generated .
-	@echo [FMT] Go code formatted .
+	@echo [FMT] Go code formatted.
 
 # Vet Go code
 vet:
@@ -94,22 +94,18 @@ lint: ensure-golangci-lint fmt
 # Build server
 build: proto fmt vet lint
 	@echo [BUILD] Building server binary...
-ifeq ($(OS),Windows_NT)
-	@go build -o server\server.exe ./server/server.go
-else
-	@go build -o server/server ./server/server.go
-endif
-	@echo [BUILD] Server binary built.
+	@go build -o server/server ./server/server.go ./server/db.go
+	@echo [BUILD] Server binary built successfully.
 
 # Run the server
 run: proto fmt vet lint
 	@echo [RUN] Starting server...
-ifeq ($(OS),Windows_NT)
-	@setlocal enabledelayedexpansion && ( \
-		for /F "tokens=1,2 delims==" %%i in (.env) do set %%i=%%j) && go run ./server/server.go $(ARGS)
-else
-	@env $$(cat .env | xargs) go run ./server/server.go $(ARGS)
-endif
+	@go run ./server/server.go ./server/db.go $(ARGS)
+
+test: proto gomod fmt vet lint
+	@echo [TEST] Running tests...
+	@go test -v ./server/ | grep -v '=== RUN' | sed 's/--- PASS:/ [PASS]/' | sed 's/--- FAIL:/ [FAIL]/'
+	@echo [TEST] Tests completed.
 
 # Build Docker image
 docker-build: proto fmt vet lint build
@@ -133,7 +129,7 @@ endif
 clean:
 	@echo [CLEAN] Removing generated files...
 ifeq ($(OS),Windows_NT)
-	@del /Q server\server.exe
+	@del /Q server\server
 	@del /Q protos\*.pb.go
 else
 	@rm -rf server/server
